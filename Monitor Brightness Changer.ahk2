@@ -1,0 +1,169 @@
+﻿/**** DIRECTIVE SECTION ****/
+
+;; This is an AutoHotkey v2 script:
+#Requires AutoHotkey v2.0-a (or later)
+
+;; Enable warnings to assist with detecting common errors:
+#Warn All
+
+;; To access this file from another script in the same directory, add the line below to that script:
+;; #Include "%A_ScriptDir%\Monitor Brightness Changer.ahk2"
+
+/**** CLASS SECTION ****/
+
+;; Private:
+Class WindowsAPITypes
+{
+    ;; It seems the Windows API avoids using standard C++ types, and instead has its own defined type system (which are implemented as C++ types).
+    ;; More information can be found at: https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types
+    Static DWORD := "UInt"             ;; Represents a 32-bit unsigned integer.
+    Static BOOL := "Int"               ;; Represents a boolean, which will be either 1 (true) or 0 (false).
+    Static LPDWORD := "UInt*"          ;; Represents a pointer to a DWORD, which may look like &(DWORD variable) in practice.
+    Static HMONITOR := "Ptr"           ;; Represents a pointer ("handle") to a display monitor.
+    Static LPPHYSICAL_MONITOR := "Ptr" ;; Represents a pointer to a PHYSICAL_MONITOR struct.
+    Static HANDLE := "Ptr"             ;; Represents a pointer ("handle") to an object.
+}
+
+;; Public:
+Class MonitorBrightnessChanger
+{
+    ;; All private:
+    NumberOfPhysicalMonitors := 0
+    ArrayOfPhysicalMonitors := "NULL"
+    PrimaryPhysicalMonitorHandle := "NULL"
+    MinimumBrightness := 0
+    CurrentBrightness := 0
+    MaximumBrightness := 0
+
+    ;; Public (constructor):
+    __New()
+    {
+        primaryDisplayMonitorHandle := this.GetPrimaryDisplayMonitorHandle()
+        this.RecordNumberOfPhysicalMonitors(primaryDisplayMonitorHandle)
+        this.RecordArrayOfPhysicalMonitors(primaryDisplayMonitorHandle)
+        this.RecordPrimaryPhysicalMonitorHandle()
+        this.RecordPhysicalMonitorMinimumCurrentMaximumBrightness()
+    }
+
+    ;; Private:
+    GetPrimaryDisplayMonitorHandle()
+    {
+        MONITOR_DEFAULTTOPRIMARY := "0x00000001"
+        ;; To pass a NULL argument, we use type "Ptr" and value "0":
+        return DllCall("C:\Windows\System32\user32.dll\MonitorFromPoint",
+                       "Ptr", "0",
+                       WindowsAPITypes.DWORD, MONITOR_DEFAULTTOPRIMARY,
+                       "Cdecl " . WindowsAPITypes.HMONITOR)
+    }
+
+    ;; Private:
+    RecordNumberOfPhysicalMonitors(primaryDisplayMonitorHandle)
+    {
+        ;; For the 5th argument, creating a VarRef (&) for NumberOfPhysicalMonitors, an instance variable, is not supported at the time of writing this (https://lexikos.github.io/v2/docs/Functions.htm#ByRef).
+        ;; Therefore, we must first define a local variable (numberOfPhysicalMonitors), create a VarRef for it (as required for the DllCall to assign it a value), then copy the value to the instance variable:
+        wasSuccessful := DllCall("C:\Windows\System32\dxva2.dll\GetNumberOfPhysicalMonitorsFromHMONITOR",
+                                 WindowsAPITypes.HMONITOR, primaryDisplayMonitorHandle,
+                                 WindowsAPITypes.LPDWORD, &numberOfPhysicalMonitors := 0,
+                                 "Cdecl " . WindowsAPITypes.BOOL)
+        this.IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, "Could not get number of physical monitors.")
+        this.NumberOfPhysicalMonitors := numberOfPhysicalMonitors
+    }
+
+    ;; Private:
+    IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, errorMessage)
+    {
+        if (!wasSuccessful)
+        {
+            MsgBox("ERROR: " . errorMessage . "`n" .
+                   "Script will exit after closing this window.")
+            ExitApp()
+        }
+    }
+
+    ;; Private:
+    RecordArrayOfPhysicalMonitors(primaryDisplayMonitorHandle)
+    {
+        ;; A PHYSICAL_MONITOR struct contains a pointer (of size A_PtrSize bytes) and an array of 128 WCHAR characters (each of size 16 bits = 2 bytes):
+        physicalMonitorSizeInBytes := A_PtrSize + 128 * 2
+        ;; We must allocate an array before passing it to GetPhysicalMonitorsFromHMONITOR:
+        this.ArrayOfPhysicalMonitors := Buffer(this.NumberOfPhysicalMonitors * physicalMonitorSizeInBytes, 0)
+        ;; There is no need to manually free memory allocated by Buffer(), as it's done automatically when it no longer has any references (https://lexikos.github.io/v2/docs/objects/Buffer.htm#Ptr).
+        wasSuccessful := DllCall("C:\Windows\System32\dxva2.dll\GetPhysicalMonitorsFromHMONITOR",
+                                 WindowsAPITypes.HMONITOR, primaryDisplayMonitorHandle,
+                                 WindowsAPITypes.DWORD, this.NumberOfPhysicalMonitors,
+                                 WindowsAPITypes.LPPHYSICAL_MONITOR, this.ArrayOfPhysicalMonitors,
+                                 "Cdecl " . WindowsAPITypes.BOOL)
+        this.IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, "Could not get array of physical monitors.")
+    }
+
+    ;; Private:
+    RecordPrimaryPhysicalMonitorHandle()
+    {
+        ;; In the case of 1 physical monitor, the array would contain 1 PHYSICAL_MONITOR object, located at (base address of array) + offset 0.
+        ;; We treat this as a C++ array, which starts at offset 0.
+        ;; The array contains PHYSICAL_MONITOR objects (not pointers to PHYSICAL_MONITOR objects).
+        ;; Therefore, at array offset 0 is the first PHYSICAL_MONITOR object.
+        ;; Inside the PHYSICAL_MONITOR struct, the first field is at (base address of that PHYSICAL_MONITOR object) + offset 0.
+        ;; This field, the physical monitor handle, is of type HANDLE (a pointer).
+        ;; So, for the first PHYSICAL_MONITOR object (at array offset 0), we get its HANDLE field (at object offset 0).
+        ;; Thus, (array offset 0) + (object offset 0) = final offset 0:
+        this.PrimaryPhysicalMonitorHandle := NumGet(this.ArrayOfPhysicalMonitors, 0, WindowsAPITypes.HANDLE)
+    }
+
+    ;; Private:
+    RecordPhysicalMonitorMinimumCurrentMaximumBrightness()
+    {
+        ;; See the comments in function RecordNumberOfPhysicalMonitors for more details on the approach used below to handle VarRefs (&).
+        wasSuccessful := DllCall("C:\Windows\System32\dxva2.dll\GetMonitorBrightness",
+                                 WindowsAPITypes.HANDLE, this.PrimaryPhysicalMonitorHandle,
+                                 WindowsAPITypes.LPDWORD, &monitorMinimumBrightness := 0,
+                                 WindowsAPITypes.LPDWORD, &monitorCurrentBrightness := 0,
+                                 WindowsAPITypes.LPDWORD, &monitorMaximumBrightness := 0,
+                                 "Cdecl " . WindowsAPITypes.BOOL)
+        this.IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, "Could not get monitor brightness values.")
+        this.MonitorMinimumBrightness := monitorMinimumBrightness
+        this.MonitorCurrentBrightness := monitorCurrentBrightness
+        this.MonitorMaximumBrightness := monitorMaximumBrightness
+    }
+
+    ;; Public:
+    GetCurrentBrightness()
+    {
+        return this.MonitorCurrentBrightness
+    }
+
+    ;; Public:
+    GetMinimumBrightness()
+    {
+        return this.MonitorMinimumBrightness
+    }
+
+    ;; Public:
+    DecrementBrightness()
+    {
+        --this.MonitorCurrentBrightness
+        wasSuccessful := DllCall("C:\Windows\System32\dxva2.dll\SetMonitorBrightness",
+                                 WindowsAPITypes.HANDLE, this.PrimaryPhysicalMonitorHandle,
+                                 WindowsAPITypes.DWORD, this.MonitorCurrentBrightness,
+                                 "Cdecl " . WindowsAPITypes.BOOL)
+        this.IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, "Could not set monitor brightness.")
+    }
+
+    ;; Private:
+    __Delete()
+    {
+        ;; __Delete() is automatically called when this object has no more variables referring to it (https://lexikos.github.io/v2/docs/Objects.htm#Custom_NewDelete).
+        this.DestroyArrayOfPhysicalMonitors()
+    }
+
+    ;; Private:
+    DestroyArrayOfPhysicalMonitors()
+    {
+        ;; The documentation for GetPhysicalMonitorsFromHMONITOR states we should call DestroyPhysicalMonitors to close all monitor handles after use:
+        wasSuccessful := DllCall("C:\Windows\System32\dxva2.dll\DestroyPhysicalMonitors",
+                                 WindowsAPITypes.DWORD, this.NumberOfPhysicalMonitors,
+                                 WindowsAPITypes.LPPHYSICAL_MONITOR, this.ArrayOfPhysicalMonitors,
+                                 "Cdecl " . WindowsAPITypes.BOOL)
+        this.IfUnsuccessfulDisplayErrorAndExitScript(wasSuccessful, "Could not destroy array of physical monitors.")
+    }
+}

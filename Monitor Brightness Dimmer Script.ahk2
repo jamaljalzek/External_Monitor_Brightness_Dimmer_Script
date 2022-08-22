@@ -1,0 +1,59 @@
+﻿/**** DIRECTIVE SECTION ****/
+
+;; This is an AutoHotkey v2 script:
+#Requires AutoHotkey v2.0-a (or later)
+
+;; Enable warnings to assist with detecting common errors:
+#Warn All
+
+;; Import the MonitorBrightnessChanger class:
+#Include "%A_ScriptDir%\Monitor Brightness Changer.ahk2"
+
+/**** EXECUTION SECTION ****/
+
+Main()
+
+/**** FUNCTION SECTION ****/
+
+;; Private:
+Main()
+{
+    SleepUntilDimmingStartTime()
+    DimToMinimumBrightness()
+}
+
+;; Private:
+SleepUntilDimmingStartTime()
+{
+    ;; To convert from PM to 24 hour format, add 12 to it.
+    ;; For example, 6:00 PM = 12:00 + 6:00 = 18:00:
+    dimmingStartHH24 := "18"
+    dimmingStartMM := "00"
+    dimmingStartYYYYMMDDHH24MISS := A_YYYY . A_MM . A_DD . dimmingStartHH24 . dimmingStartMM . "00"
+    secondsUntilDimmingStart := DateDiff(dimmingStartYYYYMMDDHH24MISS, A_Now, "Seconds")
+    millisecondsUntilDimmingStart := secondsUntilDimmingStart * 1000
+    Sleep(millisecondsUntilDimmingStart)
+}
+
+;; Private:
+DimToMinimumBrightness()
+{
+    dimmingDurationInHours := 2
+    dimmingDurationInMilliseconds := dimmingDurationInHours * 60 * 60 * 1000
+    brightnessChanger := MonitorBrightnessChanger()
+    ;; In case the minimum possible brightness value is greater than 0:
+    brightnessToDimBy := brightnessChanger.GetCurrentBrightness() - brightnessChanger.GetMinimumBrightness()
+    ;; Integer division (//) is used below:
+    millisecondsPerBrightnessDecrement := dimmingDurationInMilliseconds // brightnessToDimBy
+    BeginDimmingBrightness(brightnessChanger, millisecondsPerBrightnessDecrement)
+}
+
+;; Private:
+BeginDimmingBrightness(brightnessChanger, millisecondsPerBrightnessDecrement)
+{
+    while (brightnessChanger.GetCurrentBrightness() > brightnessChanger.GetMinimumBrightness())
+    {
+        brightnessChanger.DecrementBrightness()
+        Sleep(millisecondsPerBrightnessDecrement)
+    }
+}
