@@ -1,0 +1,122 @@
+﻿/**** DIRECTIVE SECTION ****/
+
+;; This is an AutoHotkey v2 script:
+#Requires AutoHotkey v2.0-a (or later)
+
+;; Enable warnings to assist with detecting common errors:
+#Warn All
+
+/**** EXECUTION SECTION ****/
+
+Main()
+
+/**** FUNCTION SECTION ****/
+
+;; Private:
+Main()
+{
+    CreateSettingsWindow()
+    A_TrayMenu.Add("Edit settings", ShowSettingsWindow)
+}
+
+;; Private:
+CreateSettingsWindow()
+{
+    Global SettingsWindow
+
+    SettingsWindow := Gui()
+    SettingsWindow.Title := "Monitor Brightness Dimmer"
+    SettingsWindow.SetFont("s16")    
+    AddDimmingStartTimeForm()
+    AddDimmingDurationForm()
+    AddSaveButton()
+}
+
+;; Private:
+AddDimmingStartTimeForm()
+{
+    Global SettingsWindow
+
+    ;; SECTION 0 (ROW 0):
+    SettingsWindow.Add("Text", "Section", "Dimming start time:")
+
+    ;; SECTION 1 (ROWS 1 AND 2):
+    ;; Create a new section, which contains only this text control:
+    SettingsWindow.Add("Text", "Section", "HH24:")
+    ;; Add a tickerbox control to the section, which gets placed below the above text control:
+    AddTickerBox("DimmingStartHH24TickerBox", 0, 23)
+    ;; Create a new column in the section, which is added to the right of the previous column.
+    ;; Then add a text control to the top of this second column:
+    SettingsWindow.Add("Text", "YS", "MM:")
+    ;; Add an edit control, which gets placed in the second column, below the above text control:
+    AddTickerBox("DimmingStartMMTickerBox", 0, 59)
+}
+
+;; Private:
+AddTickerBox(nameOfTickerBox, minimumValue, maximumValue)
+{
+    Global SettingsWindow
+
+    ;; The below text control is the UpDown's "buddy control", which displays the UpDown's current value:
+    SettingsWindow.Add("Text", "Background0xFFFFFF W150")
+    SettingsWindow.Add("UpDown", "v" . nameOfTickerBox . " Range" . minimumValue . "-" . maximumValue, 0)
+}
+
+;; Private:
+AddDimmingDurationForm()
+{
+    Global SettingsWindow
+
+    ;; SECTION 0 (ROW 0):
+    SettingsWindow.Add("Text", "Section XS", "Dimming duration:")
+
+    ;; SECTION 1 (ROWS 1 AND 2):
+    ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
+    SettingsWindow.Add("Text", "Section", "HH24:")
+    AddTickerBox("DimmingDurationHH24TickerBox", 0, 23)
+    SettingsWindow.Add("Text", "YS", "MM:")
+    AddTickerBox("DimmingDurationMMTickerBox", 0, 59)
+}
+
+;; Private:
+AddSaveButton()
+{
+    Global SettingsWindow
+
+    ;; SECTION 0 (ROW 0):
+    saveButtonObject := SettingsWindow.Add("Button", "Section X0", "Save")
+    CenterSaveButton(saveButtonObject)
+    saveButtonObject.OnEvent("Click", OnSaveButtonClick)
+}
+
+;; Private:
+CenterSaveButton(saveButtonObject)
+{
+    Global SettingsWindow
+
+    saveButtonObject.GetPos(&unused, &saveButtonYPosition, &saveButtonWidth, &saveButtonHeight)
+    ;; We have to first show the SettingsWindow before we can obtain its width:
+    SettingsWindow.Show()
+    SettingsWindow.GetPos(&unused, &unused, &settingsWindowWidth, &unused)
+    saveButtonNewXPosition := (settingsWindowWidth - saveButtonWidth - SettingsWindow.MarginX) // 2
+    saveButtonObject.Move(saveButtonNewXPosition, saveButtonYPosition, saveButtonWidth, saveButtonHeight)
+}
+
+;; Private:
+OnSaveButtonClick(saveButtonObject, unusedInfoArgument)
+{
+    Global SettingsWindow
+
+    dimmingStartHH24 := SettingsWindow["DimmingStartHH24TickerBox"].Value
+    dimmingStartMM := SettingsWindow["DimmingStartMMTickerBox"].Value
+    dimmingDurationHH24 := SettingsWindow["DimmingDurationHH24TickerBox"].Value
+    dimmingDurationMM := SettingsWindow["DimmingDurationMMTickerBox"].Value
+}
+
+;; Private:
+ShowSettingsWindow(itemName, itemPos, myMenu)
+{
+    Global SettingsWindow
+    
+    SettingsWindow.Show()
+}
