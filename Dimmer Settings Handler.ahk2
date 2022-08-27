@@ -1,0 +1,92 @@
+/**** DIRECTIVE SECTION ****/
+
+;; This is an AutoHotkey v2 script:
+#Requires AutoHotkey v2.0-a (or later)
+
+;; Enable warnings to assist with detecting common errors:
+#Warn All
+
+/**** CLASS SECTION ****/
+
+;; Public:
+Class DimmingSettingsHandler
+{
+    ;; All private:
+    PathOfSettingsFile := A_ScriptDir . "\User Settings.txt"
+    DimmingStartHH24 := "00"
+    DimmingStartMM := "00"
+    DimmingDurationHH24 := "00"
+    DimmingDurationMM := "00"
+
+    ;; Public (constructor):
+    __New()
+    {
+        if (!this.DoesSettingsFileExist())
+        {
+            this.CreateDefaultSettingsFile()
+        }
+        this.InitializeSettingsFromFile()
+    }
+
+    ;; Private:
+    DoesSettingsFileExist()
+    {
+        return FileExist(this.PathOfSettingsFile) != ""
+    }
+
+    ;; Private:
+    CreateDefaultSettingsFile()
+    {
+        ;; To convert from PM to 24 hour format, add 12 to it.
+        this.SaveNewSettings("18", "00", "02", "00")
+    }
+
+    ;; Public:
+    SaveNewSettings(dimmingStartHH24, dimmingStartMM, dimmingDurationHH24, dimmingDurationMM)
+    {
+        ;; Attempting to delete a file that doesn't exist throws an error instead of silently failing, so check first:
+        if (this.DoesSettingsFileExist())
+        {
+            FileDelete(this.PathOfSettingsFile)
+        }
+        FileAppend(dimmingStartHH24, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingStartMM, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingDurationHH24, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingDurationMM, this.PathOfSettingsFile)
+    }
+
+    ;; Private:
+    InitializeSettingsFromFile()
+    {
+        settingsFileObject := FileOpen(this.PathOfSettingsFile, "R")
+        this.DimmingStartHH24 := settingsFileObject.ReadLine()
+        this.DimmingStartMM := settingsFileObject.ReadLine()
+        this.DimmingDurationHH24 := settingsFileObject.ReadLine()
+        this.DimmingDurationMM := settingsFileObject.ReadLine()
+        settingsFileObject.Close()
+    }
+
+    ;; Public:
+    GetDimmingStartHH24()
+    {
+        return this.DimmingStartHH24
+    }
+
+    ;; Public:
+    GetDimmingStartMM()
+    {
+        return this.DimmingStartMM
+    }
+
+    ;; Public:
+    GetDimmingDurationHH24()
+    {
+        return this.DimmingDurationHH24
+    }
+
+    ;; Public:
+    GetDimmingDurationMM()
+    {
+        return this.DimmingDurationMM
+    }
+}
