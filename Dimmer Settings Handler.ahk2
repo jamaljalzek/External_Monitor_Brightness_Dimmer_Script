@@ -6,17 +6,20 @@
 ;; Enable warnings to assist with detecting common errors:
 #Warn All
 
+;; To access this file from another script in the same directory, add the line below to that script:
+;; #Include "%A_ScriptDir%\Dimmer Settings Handler.ahk2"
+
 /**** CLASS SECTION ****/
 
 ;; Public:
 Class DimmingSettingsHandler
 {
     ;; All private:
-    PathOfSettingsFile := A_ScriptDir . "\User Settings.txt"
-    DimmingStartHH24 := "00"
-    DimmingStartMM := "00"
-    DimmingDurationHH24 := "00"
-    DimmingDurationMM := "00"
+    PathOfSettingsFile := A_ScriptDir . "\Dimming Settings.txt"
+    DimmingStartHour24 := 0
+    DimmingStartMinute60 := 0
+    DimmingDurationHour24 := 0
+    DimmingDurationMinute60 := 0
 
     ;; Public (constructor):
     __New()
@@ -25,7 +28,7 @@ Class DimmingSettingsHandler
         {
             this.CreateDefaultSettingsFile()
         }
-        this.InitializeSettingsFromFile()
+        this.InitializeFromSettingsFile()
     }
 
     ;; Private:
@@ -37,56 +40,108 @@ Class DimmingSettingsHandler
     ;; Private:
     CreateDefaultSettingsFile()
     {
-        ;; To convert from PM to 24 hour format, add 12 to it.
-        this.SaveNewSettings("18", "00", "02", "00")
+        ;; For the first argument, to convert from PM to 24 hour format, add 12 to it.
+        ;; For example, 6:00 PM = 6:00 + 12:00 = 18:00:
+        this.SaveNewSettings(18, 0, 2, 0)
     }
 
     ;; Public:
-    SaveNewSettings(dimmingStartHH24, dimmingStartMM, dimmingDurationHH24, dimmingDurationMM)
+    SaveNewSettings(dimmingStartHour24, dimmingStartMinute60, dimmingDurationHour24, dimmingDurationMinute60)
     {
         ;; Attempting to delete a file that doesn't exist throws an error instead of silently failing, so check first:
         if (this.DoesSettingsFileExist())
         {
             FileDelete(this.PathOfSettingsFile)
         }
-        FileAppend(dimmingStartHH24, this.PathOfSettingsFile)
-        FileAppend("`n" . dimmingStartMM, this.PathOfSettingsFile)
-        FileAppend("`n" . dimmingDurationHH24, this.PathOfSettingsFile)
-        FileAppend("`n" . dimmingDurationMM, this.PathOfSettingsFile)
+        FileAppend(dimmingStartHour24, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingStartMinute60, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingDurationHour24, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingDurationMinute60, this.PathOfSettingsFile)
     }
 
     ;; Private:
-    InitializeSettingsFromFile()
+    InitializeFromSettingsFile()
     {
         settingsFileObject := FileOpen(this.PathOfSettingsFile, "R")
-        this.DimmingStartHH24 := settingsFileObject.ReadLine()
-        this.DimmingStartMM := settingsFileObject.ReadLine()
-        this.DimmingDurationHH24 := settingsFileObject.ReadLine()
-        this.DimmingDurationMM := settingsFileObject.ReadLine()
+        this.DimmingStartHour24 := this.ReadNextSettingsValue(settingsFileObject)
+        this.DimmingStartMinute60 := this.ReadNextSettingsValue(settingsFileObject)
+        this.DimmingDurationHour24 := this.ReadNextSettingsValue(settingsFileObject)
+        this.DimmingDurationMinute60 := this.ReadNextSettingsValue(settingsFileObject)
         settingsFileObject.Close()
+    }
+
+    ;; Private:
+    ReadNextSettingsValue(settingsFileObject)
+    {
+        lineRead := settingsFileObject.ReadLine()
+        if (IsNumber(lineRead))
+        {
+            return Number(lineRead)
+        }
+        this.ResetToDefaultSettingsAndReloadScript(settingsFileObject)
+    }
+
+    ;; Private:
+    ResetToDefaultSettingsAndReloadScript(settingsFileObject)
+    {
+        MsgBox("ERROR: Invalid setting detected in settings file." . "`n" .
+        "Script will reset to default settings and reload after closing this window.")
+        ;; Attempting to replace the settings file while its associated File object is still open throws an error, so first close the File object:
+        settingsFileObject.Close()
+        this.CreateDefaultSettingsFile()
+        Reload()
     }
 
     ;; Public:
     GetDimmingStartHH24()
     {
-        return this.DimmingStartHH24
+        return this.ConvertToTwoDigitString(this.DimmingStartHour24)
+    }
+
+    ;; Private:
+    ConvertToTwoDigitString(numberToConvert)
+    {
+        if (numberToConvert < 10)
+        {
+            return "0" . numberToConvert
+        }
+        return "" . numberToConvert
     }
 
     ;; Public:
-    GetDimmingStartMM()
+    GetDimmingStartMM60()
     {
-        return this.DimmingStartMM
+        return this.ConvertToTwoDigitString(this.DimmingStartMinute60)
     }
 
     ;; Public:
-    GetDimmingDurationHH24()
+    GetDimmingDurationTotalMilliseconds()
     {
-        return this.DimmingDurationHH24
+        dimmingDurationTotalMinutes := this.DimmingDurationHour24 * 60 + this.DimmingDurationMinute60
+        return dimmingDurationTotalMinutes * 60 * 1000
     }
 
     ;; Public:
-    GetDimmingDurationMM()
+    GetDimmingStartHour24()
     {
-        return this.DimmingDurationMM
+        return this.DimmingStartHour24
+    }
+
+    ;; Public:
+    GetDimmingStartMinute60()
+    {
+        return this.DimmingStartMinute60
+    }
+
+    ;; Public:
+    GetDimmingDurationHour24()
+    {
+        return this.DimmingDurationHour24
+    }
+
+    ;; Public:
+    GetDimmingDurationMinute60()
+    {
+        return this.DimmingDurationMinute60
     }
 }
