@@ -6,117 +6,119 @@
 ;; Enable warnings to assist with detecting common errors:
 #Warn All
 
-/**** EXECUTION SECTION ****/
+;; To access this file from another script in the same directory, add the line below to that script:
+;; #Include "%A_ScriptDir%\Monitor Brightness Dimmer GUI.ahk2"
 
-Main()
+/**** CLASS SECTION ****/
 
-/**** FUNCTION SECTION ****/
-
-;; Private:
-Main()
+;; Public:
+Class DimmerSettingsWindow
 {
-    CreateSettingsWindow()
-    A_TrayMenu.Add("Edit settings", ShowSettingsWindow)
-}
+    ;; Private:
+    Static SettingsWindow := "NULL"
+    Static DimmingSettings := "NULL"
 
-;; Private:
-CreateSettingsWindow()
-{
-    Global SettingsWindow
+    ;; Public:
+    Static AddNewSettingsWindowToScriptTrayMenu(dimmingSettings)
+    {
+        DimmerSettingsWindow.DimmingSettings := dimmingSettings
+        DimmerSettingsWindow.CreateSettingsWindow()
+        ;; To insert a new item into position N, we must include an "&" after N:
+        A_TrayMenu.Insert("1&", "Edit dimming settings", DimmerSettingsWindow.ShowSettingsWindow)
+    }
 
-    SettingsWindow := Gui()
-    SettingsWindow.Title := "Monitor Brightness Dimmer"
-    SettingsWindow.SetFont("s16")    
-    AddDimmingStartTimeForm()
-    AddDimmingDurationForm()
-    AddSaveButton()
-}
+    ;; Private:
+    Static CreateSettingsWindow()
+    {
+        DimmerSettingsWindow.SettingsWindow := Gui()
+        DimmerSettingsWindow.SettingsWindow.Title := "Monitor Brightness Dimmer"
+        DimmerSettingsWindow.SettingsWindow.SetFont("s16")    
+        DimmerSettingsWindow.AddDimmingStartTimeForm()
+        DimmerSettingsWindow.AddDimmingDurationForm()
+        DimmerSettingsWindow.AddSaveButton()
+        DimmerSettingsWindow.SettingsWindow.Hide()
+    }
 
-;; Private:
-AddDimmingStartTimeForm()
-{
-    Global SettingsWindow
+    ;; Private:
+    Static AddDimmingStartTimeForm()
+    {
+        ;; SECTION 0 (ROW 0):
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Dimming start time:")
 
-    ;; SECTION 0 (ROW 0):
-    SettingsWindow.Add("Text", "Section", "Dimming start time:")
+        ;; SECTION 1 (ROWS 1 AND 2):
+        ;; Create a new section, which contains only this text control:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
+        ;; Add a tickerbox control to the section, which gets placed below the above text control:
+        DimmerSettingsWindow.AddTickerBox("DimmingStartHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmingSettings.GetDimmingStartHour24())
+        ;; Create a new column in the section, which is added to the right of the previous column.
+        ;; Then add a text control to the top of this second column:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
+        ;; Add an edit control, which gets placed in the second column, below the above text control:
+        DimmerSettingsWindow.AddTickerBox("DimmingStartMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmingSettings.GetDimmingStartMinute60())
+    }
 
-    ;; SECTION 1 (ROWS 1 AND 2):
-    ;; Create a new section, which contains only this text control:
-    SettingsWindow.Add("Text", "Section", "HH24:")
-    ;; Add a tickerbox control to the section, which gets placed below the above text control:
-    AddTickerBox("DimmingStartHH24TickerBox", 0, 23)
-    ;; Create a new column in the section, which is added to the right of the previous column.
-    ;; Then add a text control to the top of this second column:
-    SettingsWindow.Add("Text", "YS", "MM:")
-    ;; Add an edit control, which gets placed in the second column, below the above text control:
-    AddTickerBox("DimmingStartMMTickerBox", 0, 59)
-}
+    ;; Private:
+    Static AddTickerBox(nameOfTickerBox, minimumValue, maximumValue, defaultValue)
+    {
+        ;; The below text control is the UpDown's "buddy control", which displays the UpDown's current value:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Background0xFFFFFF W150")
+        DimmerSettingsWindow.SettingsWindow.Add("UpDown", "v" . nameOfTickerBox . " Range" . minimumValue . "-" . maximumValue, defaultValue)
+    }
 
-;; Private:
-AddTickerBox(nameOfTickerBox, minimumValue, maximumValue)
-{
-    Global SettingsWindow
+    ;; Private:
+    Static AddDimmingDurationForm()
+    {
+        ;; SECTION 0 (ROW 0):
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section XS", "Dimming duration:")
 
-    ;; The below text control is the UpDown's "buddy control", which displays the UpDown's current value:
-    SettingsWindow.Add("Text", "Background0xFFFFFF W150")
-    SettingsWindow.Add("UpDown", "v" . nameOfTickerBox . " Range" . minimumValue . "-" . maximumValue, 0)
-}
+        ;; SECTION 1 (ROWS 1 AND 2):
+        ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
+        DimmerSettingsWindow.AddTickerBox("DimmingDurationHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmingSettings.GetDimmingDurationHour24())
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
+        DimmerSettingsWindow.AddTickerBox("DimmingDurationMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmingSettings.GetDimmingDurationMinute60())
+    }
 
-;; Private:
-AddDimmingDurationForm()
-{
-    Global SettingsWindow
+    ;; Private:
+    Static AddSaveButton()
+    {
+        ;; SECTION 0 (ROW 0):
+        saveButtonObject := DimmerSettingsWindow.SettingsWindow.Add("Button", "Section X0", "Save")
+        DimmerSettingsWindow.CenterSaveButton(saveButtonObject)
+        saveButtonObject.OnEvent("Click", DimmerSettingsWindow.OnSaveButtonClick)
+    }
 
-    ;; SECTION 0 (ROW 0):
-    SettingsWindow.Add("Text", "Section XS", "Dimming duration:")
+    ;; Private:
+    Static CenterSaveButton(saveButtonObject)
+    {
+        saveButtonObject.GetPos(&unused, &saveButtonYPosition, &saveButtonWidth, &saveButtonHeight)
+        ;; We have to first show the SettingsWindow before we can obtain its width:
+        DimmerSettingsWindow.SettingsWindow.Show()
+        DimmerSettingsWindow.SettingsWindow.GetPos(&unused, &unused, &settingsWindowWidth, &unused)
+        saveButtonNewXPosition := (settingsWindowWidth - saveButtonWidth - DimmerSettingsWindow.SettingsWindow.MarginX) // 2
+        saveButtonObject.Move(saveButtonNewXPosition, saveButtonYPosition, saveButtonWidth, saveButtonHeight)
+    }
 
-    ;; SECTION 1 (ROWS 1 AND 2):
-    ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
-    SettingsWindow.Add("Text", "Section", "HH24:")
-    AddTickerBox("DimmingDurationHH24TickerBox", 0, 23)
-    SettingsWindow.Add("Text", "YS", "MM:")
-    AddTickerBox("DimmingDurationMMTickerBox", 0, 59)
-}
+    ;; Private:
+    Static OnSaveButtonClick(unused)
+    {
+        dimmingStartHour24 := DimmerSettingsWindow.SettingsWindow["DimmingStartHour24TickerBox"].Value
+        dimmingStartMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingStartMinute60TickerBox"].Value
+        dimmingDurationHour24 := DimmerSettingsWindow.SettingsWindow["DimmingDurationHour24TickerBox"].Value
+        dimmingDurationMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingDurationMinute60TickerBox"].Value
+        DimmerSettingsWindow.DimmingSettings.SaveNewSettings(dimmingStartHour24,
+                                                             dimmingStartMinute60,
+                                                             dimmingDurationHour24,
+                                                             dimmingDurationMinute60)
+        Reload()
+    }
 
-;; Private:
-AddSaveButton()
-{
-    Global SettingsWindow
-
-    ;; SECTION 0 (ROW 0):
-    saveButtonObject := SettingsWindow.Add("Button", "Section X0", "Save")
-    CenterSaveButton(saveButtonObject)
-    saveButtonObject.OnEvent("Click", OnSaveButtonClick)
-}
-
-;; Private:
-CenterSaveButton(saveButtonObject)
-{
-    Global SettingsWindow
-
-    saveButtonObject.GetPos(&unused, &saveButtonYPosition, &saveButtonWidth, &saveButtonHeight)
-    ;; We have to first show the SettingsWindow before we can obtain its width:
-    SettingsWindow.Show()
-    SettingsWindow.GetPos(&unused, &unused, &settingsWindowWidth, &unused)
-    saveButtonNewXPosition := (settingsWindowWidth - saveButtonWidth - SettingsWindow.MarginX) // 2
-    saveButtonObject.Move(saveButtonNewXPosition, saveButtonYPosition, saveButtonWidth, saveButtonHeight)
-}
-
-;; Private:
-OnSaveButtonClick(saveButtonObject, unusedInfoArgument)
-{
-    Global SettingsWindow
-
-    dimmingStartHH24 := SettingsWindow["DimmingStartHH24TickerBox"].Value
-    dimmingStartMM := SettingsWindow["DimmingStartMMTickerBox"].Value
-    dimmingDurationHH24 := SettingsWindow["DimmingDurationHH24TickerBox"].Value
-    dimmingDurationMM := SettingsWindow["DimmingDurationMMTickerBox"].Value
-}
-
-;; Private:
-ShowSettingsWindow(itemName, itemPos, myMenu)
-{
-    Global SettingsWindow
-    
-    SettingsWindow.Show()
+    ;; Private:
+    Static ShowSettingsWindow(unusedItemPosition, unusedTrayMenuObject)
+    {
+        ;; If this was a function instead of a method, it would require 3 parameters:
+        ;; (ItemName, ItemPos, MyMenu)
+        ;; Because this is a method, the "ItemName" parameter is removed, and instead can be accessed by a hidden local variable: "this".
+        DimmerSettingsWindow.SettingsWindow.Show()
+    }
 }
