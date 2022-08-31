@@ -93,9 +93,11 @@ Class DimmingSettingsHandler
     }
 
     ;; Public:
-    GetDimmingStartHH24()
+    GetTodaysDimmingStartYYYYMMDDHH24MISS()
     {
-        return this.ConvertToTwoDigitString(this.DimmingStartHour24)
+        dimmingStartHH24 := this.ConvertToTwoDigitString(this.DimmingStartHour24)
+        dimmingStartMM60 := this.ConvertToTwoDigitString(this.DimmingStartMinute60)
+        return A_YYYY . A_MM . A_DD . dimmingStartHH24 . dimmingStartMM60 . "00"
     }
 
     ;; Private:
@@ -106,12 +108,6 @@ Class DimmingSettingsHandler
             return "0" . numberToConvert
         }
         return "" . numberToConvert
-    }
-
-    ;; Public:
-    GetDimmingStartMM60()
-    {
-        return this.ConvertToTwoDigitString(this.DimmingStartMinute60)
     }
 
     ;; Public:
