@@ -6,14 +6,11 @@
 ;; Enable warnings to assist with detecting common errors:
 #Warn All
 
-;; Import the DimmerSettingsHandler class:
-#Include "%A_ScriptDir%\Dimmer Settings Handler.ahk2"
+#Include "%A_ScriptDir%\DimmerSettingsHandler Class.ahk2"
 
-;; Import the DimmerSettingsWindow class:
-#Include "%A_ScriptDir%\Monitor Brightness Dimmer GUI.ahk2"
+#Include "%A_ScriptDir%\DimmerSettingsWindow Class.ahk2"
 
-;; Import the MonitorBrightnessChanger class:
-#Include "%A_ScriptDir%\Monitor Brightness Changer.ahk2"
+#Include "%A_ScriptDir%\MonitorBrightnessChanger Class.ahk2"
 
 /**** EXECUTION SECTION ****/
 
@@ -27,29 +24,29 @@ Class MonitorBrightnessDimmer
     ;; Public:
     Static Main()
     {
-        dimmingSettings := DimmingSettingsHandler()
-        DimmerSettingsWindow.AddNewSettingsWindowToScriptTrayMenu(dimmingSettings)
-        MonitorBrightnessDimmer.SleepUntilDimmingStartTime(dimmingSettings)
-        MonitorBrightnessDimmer.DimToMinimumBrightness(dimmingSettings)
+        dimmerSettings := DimmerSettingsHandler()
+        DimmerSettingsWindow.AddNewSettingsWindowToScriptTrayMenu(dimmerSettings)
+        MonitorBrightnessDimmer.SleepUntilDimmingStartTime(dimmerSettings)
+        MonitorBrightnessDimmer.DimToMinimumBrightness(dimmerSettings)
     }
 
     ;; Private:
-    Static SleepUntilDimmingStartTime(dimmingSettings)
+    Static SleepUntilDimmingStartTime(dimmerSettings)
     {
-        todaysDimmingStartYYYYMMDDHH24MISS := dimmingSettings.GetTodaysDimmingStartYYYYMMDDHH24MISS()
+        todaysDimmingStartYYYYMMDDHH24MISS := dimmerSettings.GetTodaysDimmingStartYYYYMMDDHH24MISS()
         secondsUntilDimmingStart := DateDiff(todaysDimmingStartYYYYMMDDHH24MISS, A_Now, "Seconds")
         millisecondsUntilDimmingStart := secondsUntilDimmingStart * 1000
         Sleep(millisecondsUntilDimmingStart)
     }
 
     ;; Private:
-    Static DimToMinimumBrightness(dimmingSettings)
+    Static DimToMinimumBrightness(dimmerSettings)
     {
         brightnessChanger := MonitorBrightnessChanger()
         ;; In case the minimum possible brightness value is greater than 0:
         brightnessToDimBy := brightnessChanger.GetCurrentBrightness() - brightnessChanger.GetMinimumBrightness()
         ;; Integer division (//) is used below:
-        millisecondsPerBrightnessDecrement := dimmingSettings.GetDimmingDurationTotalMilliseconds() // brightnessToDimBy
+        millisecondsPerBrightnessDecrement := dimmerSettings.GetDimmingDurationTotalMilliseconds() // brightnessToDimBy
         MonitorBrightnessDimmer.BeginDimmingBrightness(brightnessChanger, millisecondsPerBrightnessDecrement)
     }
 

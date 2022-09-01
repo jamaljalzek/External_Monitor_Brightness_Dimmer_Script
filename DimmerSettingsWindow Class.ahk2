@@ -7,7 +7,7 @@
 #Warn All
 
 ;; To access this file from another script in the same directory, add the line below to that script:
-;; #Include "%A_ScriptDir%\Monitor Brightness Dimmer GUI.ahk2"
+;; #Include "%A_ScriptDir%\DimmerSettingsWindow Class.ahk2"
 
 /**** CLASS SECTION ****/
 
@@ -16,12 +16,12 @@ Class DimmerSettingsWindow
 {
     ;; Private:
     Static SettingsWindow := "NULL"
-    Static DimmingSettings := "NULL"
+    Static DimmerSettings := "NULL"
 
     ;; Public:
-    Static AddNewSettingsWindowToScriptTrayMenu(dimmingSettings)
+    Static AddNewSettingsWindowToScriptTrayMenu(dimmerSettings)
     {
-        DimmerSettingsWindow.DimmingSettings := dimmingSettings
+        DimmerSettingsWindow.DimmerSettings := dimmerSettings
         DimmerSettingsWindow.CreateSettingsWindow()
         ;; To insert a new item into position N, we must include an "&" after N:
         A_TrayMenu.Insert("1&", "Edit dimming settings", DimmerSettingsWindow.ShowSettingsWindow)
@@ -49,12 +49,12 @@ Class DimmerSettingsWindow
         ;; Create a new section, which contains only this text control:
         DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
         ;; Add a tickerbox control to the section, which gets placed below the above text control:
-        DimmerSettingsWindow.AddTickerBox("DimmingStartHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmingSettings.GetDimmingStartHour24())
+        DimmerSettingsWindow.AddTickerBox("DimmingStartHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmerSettings.GetDimmingStartHour24())
         ;; Create a new column in the section, which is added to the right of the previous column.
         ;; Then add a text control to the top of this second column:
         DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
         ;; Add an edit control, which gets placed in the second column, below the above text control:
-        DimmerSettingsWindow.AddTickerBox("DimmingStartMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmingSettings.GetDimmingStartMinute60())
+        DimmerSettingsWindow.AddTickerBox("DimmingStartMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmerSettings.GetDimmingStartMinute60())
     }
 
     ;; Private:
@@ -74,9 +74,9 @@ Class DimmerSettingsWindow
         ;; SECTION 1 (ROWS 1 AND 2):
         ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
         DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
-        DimmerSettingsWindow.AddTickerBox("DimmingDurationHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmingSettings.GetDimmingDurationHour24())
+        DimmerSettingsWindow.AddTickerBox("DimmingDurationHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmerSettings.GetDimmingDurationHour24())
         DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
-        DimmerSettingsWindow.AddTickerBox("DimmingDurationMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmingSettings.GetDimmingDurationMinute60())
+        DimmerSettingsWindow.AddTickerBox("DimmingDurationMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmerSettings.GetDimmingDurationMinute60())
     }
 
     ;; Private:
@@ -106,7 +106,7 @@ Class DimmerSettingsWindow
         dimmingStartMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingStartMinute60TickerBox"].Value
         dimmingDurationHour24 := DimmerSettingsWindow.SettingsWindow["DimmingDurationHour24TickerBox"].Value
         dimmingDurationMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingDurationMinute60TickerBox"].Value
-        DimmerSettingsWindow.DimmingSettings.SaveNewSettings(dimmingStartHour24,
+        DimmerSettingsWindow.DimmerSettings.SaveNewSettings(dimmingStartHour24,
                                                              dimmingStartMinute60,
                                                              dimmingDurationHour24,
                                                              dimmingDurationMinute60)

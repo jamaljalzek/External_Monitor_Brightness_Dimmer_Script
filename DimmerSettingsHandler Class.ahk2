@@ -7,15 +7,15 @@
 #Warn All
 
 ;; To access this file from another script in the same directory, add the line below to that script:
-;; #Include "%A_ScriptDir%\Dimmer Settings Handler.ahk2"
+;; #Include "%A_ScriptDir%\DimmerSettingsHandler Class.ahk2"
 
 /**** CLASS SECTION ****/
 
 ;; Public:
-Class DimmingSettingsHandler
+Class DimmerSettingsHandler
 {
     ;; All private:
-    PathOfSettingsFile := A_ScriptDir . "\Dimming Settings.txt"
+    PathOfSettingsFile := A_ScriptDir . "\Dimmer Settings.txt"
     DimmingStartHour24 := 0
     DimmingStartMinute60 := 0
     DimmingDurationHour24 := 0
