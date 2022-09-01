@@ -11,7 +11,7 @@ When launched, the script sleeps until the predefined start time. Then, it gradu
 To run the script, you can launch it manually by double clicking it (with AutoHotkey installed). To have the script automatically launch on start-up:
 1. Create a shortcut for the "MonitorBrightnessDimmer Main Class.ahk2" file.
 2. Place the shortcut in one of the start-up folders:
-    a. For all users on a PC: "%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\StartUp"
-    b. For just one (the current) user on a PC: "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+    - For all users on a PC: "%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\StartUp"
+    - For just one (the current) user on a PC: "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
 This script is written in and only compatible with AutoHotkey 2 (https://www.autohotkey.com/), as well as Microsoft Windows. If desired, you can bundle the script files with the AutoHotkey interpreter into a self-contained executable file for portability: https://lexikos.github.io/v2/docs/Scripts.htm#ahk2exe
