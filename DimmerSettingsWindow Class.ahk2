@@ -22,6 +22,9 @@ Class DimmerSettingsWindow
     Static AddNewSettingsWindowToScriptTrayMenu(dimmerSettings)
     {
         DimmerSettingsWindow.DimmerSettings := dimmerSettings
+        ;; Setting a new icon does not retroactively affect existing windows.
+        ;; Therefore, we set it before creating the SettingsWindow:
+        TraySetIcon(A_ScriptDir . "\light bulb icon.png")
         DimmerSettingsWindow.CreateSettingsWindow()
         ;; To insert a new item into position N, we must include an "&" after N:
         A_TrayMenu.Insert("1&", "Edit dimming settings", DimmerSettingsWindow.ShowSettingsWindow)
@@ -36,7 +39,6 @@ Class DimmerSettingsWindow
         DimmerSettingsWindow.AddDimmingStartTimeForm()
         DimmerSettingsWindow.AddDimmingDurationForm()
         DimmerSettingsWindow.AddSaveButton()
-        DimmerSettingsWindow.SettingsWindow.Hide()
     }
 
     ;; Private:
@@ -92,8 +94,11 @@ Class DimmerSettingsWindow
     Static CenterSaveButton(saveButtonObject)
     {
         saveButtonObject.GetPos(&unused, &saveButtonYPosition, &saveButtonWidth, &saveButtonHeight)
-        ;; We have to first show the SettingsWindow before we can obtain its width:
-        DimmerSettingsWindow.SettingsWindow.Show()
+        ;; The SettingsWindow must be shown at least once before its dimensions can be read.
+        ;; It appears GUI objects do not have any dimensions calculated upon creaton.
+        ;; If this is correct, it could be because adding controls to a GUI object changes its required dimensions.
+        ;; It also appears that we can call the Show() method with the "Hide" argument, so the dimensions are still calculated while the SettingsWindow itself is never shown:
+        DimmerSettingsWindow.SettingsWindow.Show("Hide")
         DimmerSettingsWindow.SettingsWindow.GetPos(&unused, &unused, &settingsWindowWidth, &unused)
         saveButtonNewXPosition := (settingsWindowWidth - saveButtonWidth - DimmerSettingsWindow.SettingsWindow.MarginX) // 2
         saveButtonObject.Move(saveButtonNewXPosition, saveButtonYPosition, saveButtonWidth, saveButtonHeight)
