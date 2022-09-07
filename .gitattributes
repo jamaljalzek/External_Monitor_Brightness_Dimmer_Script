@@ -1,0 +1,2 @@
+# Set GitHub to detect all .ahk2 files as AutoHotkey files:
+*.ahk2 linguist-language=AutoHotkey
