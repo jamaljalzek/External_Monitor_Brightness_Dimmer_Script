@@ -35,8 +35,9 @@ Class DimmerSettingsWindow
     {
         DimmerSettingsWindow.SettingsWindow := Gui()
         DimmerSettingsWindow.SettingsWindow.Title := "Monitor Brightness Dimmer"
-        DimmerSettingsWindow.SettingsWindow.SetFont("s16")    
+        DimmerSettingsWindow.SettingsWindow.SetFont("s16")
         DimmerSettingsWindow.AddDimmingStartTimeForm()
+        DimmerSettingsWindow.AddDividingLine()
         DimmerSettingsWindow.AddDimmingDurationForm()
         DimmerSettingsWindow.AddSaveButton()
     }
@@ -45,39 +46,73 @@ Class DimmerSettingsWindow
     Static AddDimmingStartTimeForm()
     {
         ;; SECTION 0 (ROW 0):
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Dimming start time:")
+        DimmerSettingsWindow.AddHeading("Dimming start time:", "Section")
 
         ;; SECTION 1 (ROWS 1 AND 2):
-        ;; Create a new section, which contains only this text control:
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
-        ;; Add a tickerbox control to the section, which gets placed below the above text control:
-        DimmerSettingsWindow.AddTickerBox("DimmingStartHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmerSettings.GetDimmingStartHour24())
-        ;; Create a new column in the section, which is added to the right of the previous column.
-        ;; Then add a text control to the top of this second column:
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
-        ;; Add an edit control, which gets placed in the second column, below the above text control:
+        ;; Create a section, which gets placed below the above section, and contains only this Text control:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour:")
+        ;; Add a TickerBox control to the section, which gets placed below the above Text control:
+        DimmerSettingsWindow.AddTickerBox("DimmingStartHour12TickerBox", 1, 12, DimmerSettingsWindow.DimmerSettings.GetDimmingStartHour12())
+        ;; Add a Text control to the section, which gets placed to the right of the above TickerBox control:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "X+M", ":")
+        ;; Add a DropDownList control to the section, which gets placed below the above TickerBox:
+        DimmerSettingsWindow.AddDimmingStartHourAMPMDropDownList()
+        ;; Create a column in the section, which is added to the right of the previous column.
+        ;; Then add a Text control to the top of this second column:
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute:")
+        ;; Add an Edit control, which gets placed in the second column, below the above Text control:
         DimmerSettingsWindow.AddTickerBox("DimmingStartMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmerSettings.GetDimmingStartMinute60())
+    }
+
+    ;; Private:
+    Static AddHeading(headingTitle, options)
+    {
+        DimmerSettingsWindow.SettingsWindow.SetFont("Bold")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", options, headingTitle)
+        DimmerSettingsWindow.SettingsWindow.SetFont("Norm")
     }
 
     ;; Private:
     Static AddTickerBox(nameOfTickerBox, minimumValue, maximumValue, defaultValue)
     {
         ;; The below text control is the UpDown's "buddy control", which displays the UpDown's current value:
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "Background0xFFFFFF W150")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Background0xFFFFFF W75")
         DimmerSettingsWindow.SettingsWindow.Add("UpDown", "v" . nameOfTickerBox . " Range" . minimumValue . "-" . maximumValue, defaultValue)
+    }
+
+    ;; Private:
+    Static AddDimmingStartHourAMPMDropDownList()
+    {
+        choosePMOrAM := "Choose1"
+        if (DimmerSettingsWindow.DimmerSettings.GetDimmingStartHourAMPM() = "AM")
+        {
+            choosePMOrAM := "Choose2"
+        }
+        DimmerSettingsWindow.SettingsWindow.Add("DropDownList",
+                                                "vDimmingStartHourAMPMDropDownList XM Background0xFFFFFF W75 " . choosePMOrAM,
+                                                ["PM", "AM"])
+    }
+
+    ;; Private:
+    Static AddDividingLine()
+    {
+        DimmerSettingsWindow.SettingsWindow.SetFont("s10")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section XS", "------------------------------------------")
+        DimmerSettingsWindow.SettingsWindow.SetFont("s16")
     }
 
     ;; Private:
     Static AddDimmingDurationForm()
     {
         ;; SECTION 0 (ROW 0):
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section XS", "Dimming duration:")
+        DimmerSettingsWindow.AddHeading("Dimming duration:", "Section XS")
 
         ;; SECTION 1 (ROWS 1 AND 2):
         ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour24:")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour:")
         DimmerSettingsWindow.AddTickerBox("DimmingDurationHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmerSettings.GetDimmingDurationHour24())
-        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute60:")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "X+M", ":")
+        DimmerSettingsWindow.SettingsWindow.Add("Text", "YS", "Minute:")
         DimmerSettingsWindow.AddTickerBox("DimmingDurationMinute60TickerBox", 0, 59, DimmerSettingsWindow.DimmerSettings.GetDimmingDurationMinute60())
     }
 
@@ -85,7 +120,8 @@ Class DimmerSettingsWindow
     Static AddSaveButton()
     {
         ;; SECTION 0 (ROW 0):
-        saveButtonObject := DimmerSettingsWindow.SettingsWindow.Add("Button", "Section X0", "Save")
+        DimmerSettingsWindow.SettingsWindow.SetFont("s12")
+        saveButtonObject := DimmerSettingsWindow.SettingsWindow.Add("Button", "Section X0", "Save && Reload")
         DimmerSettingsWindow.CenterSaveButton(saveButtonObject)
         saveButtonObject.OnEvent("Click", DimmerSettingsWindow.OnSaveButtonClick)
     }
@@ -107,14 +143,16 @@ Class DimmerSettingsWindow
     ;; Private:
     Static OnSaveButtonClick(unused)
     {
-        dimmingStartHour24 := DimmerSettingsWindow.SettingsWindow["DimmingStartHour24TickerBox"].Value
+        dimmingStartHour12 := DimmerSettingsWindow.SettingsWindow["DimmingStartHour12TickerBox"].Value
+        dimmingStartHourAMPM := DimmerSettingsWindow.SettingsWindow["DimmingStartHourAMPMDropDownList"].Text
         dimmingStartMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingStartMinute60TickerBox"].Value
         dimmingDurationHour24 := DimmerSettingsWindow.SettingsWindow["DimmingDurationHour24TickerBox"].Value
         dimmingDurationMinute60 := DimmerSettingsWindow.SettingsWindow["DimmingDurationMinute60TickerBox"].Value
-        DimmerSettingsWindow.DimmerSettings.SaveNewSettings(dimmingStartHour24,
-                                                             dimmingStartMinute60,
-                                                             dimmingDurationHour24,
-                                                             dimmingDurationMinute60)
+        DimmerSettingsWindow.DimmerSettings.SaveNewSettings(dimmingStartHour12,
+                                                            dimmingStartHourAMPM,
+                                                            dimmingStartMinute60,
+                                                            dimmingDurationHour24,
+                                                            dimmingDurationMinute60)
         Reload()
     }
 

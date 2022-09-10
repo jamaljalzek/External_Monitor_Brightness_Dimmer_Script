@@ -16,7 +16,8 @@ Class DimmerSettingsHandler
 {
     ;; All private:
     PathOfSettingsFile := A_ScriptDir . "\Dimmer Settings.txt"
-    DimmingStartHour24 := 0
+    DimmingStartHour12 := 0
+    DimmingStartHourAMPM := ""
     DimmingStartMinute60 := 0
     DimmingDurationHour24 := 0
     DimmingDurationMinute60 := 0
@@ -40,20 +41,19 @@ Class DimmerSettingsHandler
     ;; Private:
     CreateDefaultSettingsFile()
     {
-        ;; For the first argument, to convert from PM to 24 hour format, add 12 to it.
-        ;; For example, 6:00 PM = 6:00 + 12:00 = 18:00:
-        this.SaveNewSettings(18, 0, 2, 0)
+        this.SaveNewSettings(6, "PM", 0, 2, 0)
     }
 
     ;; Public:
-    SaveNewSettings(dimmingStartHour24, dimmingStartMinute60, dimmingDurationHour24, dimmingDurationMinute60)
+    SaveNewSettings(dimmingStartHour12, dimmingStartHourAMPM, dimmingStartMinute60, dimmingDurationHour24, dimmingDurationMinute60)
     {
         ;; Attempting to delete a file that doesn't exist throws an error instead of silently failing, so check first:
         if (this.DoesSettingsFileExist())
         {
             FileDelete(this.PathOfSettingsFile)
         }
-        FileAppend(dimmingStartHour24, this.PathOfSettingsFile)
+        FileAppend(dimmingStartHour12, this.PathOfSettingsFile)
+        FileAppend("`n" . dimmingStartHourAMPM, this.PathOfSettingsFile)
         FileAppend("`n" . dimmingStartMinute60, this.PathOfSettingsFile)
         FileAppend("`n" . dimmingDurationHour24, this.PathOfSettingsFile)
         FileAppend("`n" . dimmingDurationMinute60, this.PathOfSettingsFile)
@@ -63,7 +63,8 @@ Class DimmerSettingsHandler
     InitializeFromSettingsFile()
     {
         settingsFileObject := FileOpen(this.PathOfSettingsFile, "R")
-        this.DimmingStartHour24 := this.ReadNextSettingsValue(settingsFileObject)
+        this.DimmingStartHour12 := this.ReadNextSettingsValue(settingsFileObject)
+        this.DimmingStartHourAMPM := settingsFileObject.ReadLine()
         this.DimmingStartMinute60 := this.ReadNextSettingsValue(settingsFileObject)
         this.DimmingDurationHour24 := this.ReadNextSettingsValue(settingsFileObject)
         this.DimmingDurationMinute60 := this.ReadNextSettingsValue(settingsFileObject)
@@ -95,9 +96,35 @@ Class DimmerSettingsHandler
     ;; Public:
     GetTodaysDimmingStartYYYYMMDDHH24MISS()
     {
-        dimmingStartHH24 := this.ConvertToTwoDigitString(this.DimmingStartHour24)
+        dimmingStartHour24 := this.GetDimmingStartHour24()
+        dimmingStartHH24 := this.ConvertToTwoDigitString(dimmingStartHour24)
         dimmingStartMM60 := this.ConvertToTwoDigitString(this.DimmingStartMinute60)
         return A_YYYY . A_MM . A_DD . dimmingStartHH24 . dimmingStartMM60 . "00"
+    }
+
+    ;; Private:
+    GetDimmingStartHour24()
+    {
+        ;; Case 1 = 12 am:
+        if (this.DimmingStartHour12 = 12 && this.DimmingStartHourAMPM = "AM")
+        {
+            return 0
+        }
+        ;; Case 2 = 1 am - 11 am:
+        if (this.DimmingStartHour12 < 12 && this.DimmingStartHourAMPM = "AM")
+        {
+            return this.DimmingStartHour12
+        }
+        ;; Case 3 = 12 pm:
+        if (this.DimmingStartHour12 = 12 && this.DimmingStartHourAMPM = "PM")
+        {
+            return 12
+        }
+        ;; Case 4 = 1 pm - 11 pm:
+        if (this.DimmingStartHour12 < 12 && this.DimmingStartHourAMPM = "PM")
+        {
+            return this.DimmingStartHour12 + 12
+        }
     }
 
     ;; Private:
@@ -113,14 +140,21 @@ Class DimmerSettingsHandler
     ;; Public:
     GetDimmingDurationTotalMilliseconds()
     {
-        dimmingDurationTotalMinutes := this.DimmingDurationHour24 * 60 + this.DimmingDurationMinute60
+        dimmingStartHour24 := this.GetDimmingStartHour24()
+        dimmingDurationTotalMinutes := dimmingStartHour24 * 60 + this.DimmingDurationMinute60
         return dimmingDurationTotalMinutes * 60 * 1000
     }
 
     ;; Public:
-    GetDimmingStartHour24()
+    GetDimmingStartHour12()
     {
-        return this.DimmingStartHour24
+        return this.DimmingStartHour12
+    }
+
+    ;; Public:
+    GetDimmingStartHourAMPM()
+    {
+        return this.DimmingStartHourAMPM
     }
 
     ;; Public:
