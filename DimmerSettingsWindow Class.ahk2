@@ -14,7 +14,7 @@
 ;; Public:
 Class DimmerSettingsWindow
 {
-    ;; Private:
+    ;; All private:
     Static SettingsWindow := "NULL"
     Static DimmerSettings := "NULL"
 
@@ -23,18 +23,17 @@ Class DimmerSettingsWindow
     {
         DimmerSettingsWindow.DimmerSettings := dimmerSettings
         ;; Setting a new icon does not retroactively affect existing windows.
-        ;; Therefore, we set it before creating the SettingsWindow:
+        ;; Therefore, set it before creating the SettingsWindow:
         TraySetIcon(A_ScriptDir . "\light bulb icon.png")
         DimmerSettingsWindow.CreateSettingsWindow()
-        ;; To insert a new item into position N, we must include an "&" after N:
-        A_TrayMenu.Insert("1&", "Edit dimming settings", DimmerSettingsWindow.ShowSettingsWindow)
+        DimmerSettingsWindow.UpdateTrayMenu()
     }
 
     ;; Private:
     Static CreateSettingsWindow()
     {
         DimmerSettingsWindow.SettingsWindow := Gui()
-        DimmerSettingsWindow.SettingsWindow.Title := "Monitor Brightness Dimmer"
+        DimmerSettingsWindow.SettingsWindow.Title := "Settings"
         DimmerSettingsWindow.SettingsWindow.SetFont("s16")
         DimmerSettingsWindow.AddDimmingStartTimeForm()
         DimmerSettingsWindow.AddDividingLine()
@@ -75,7 +74,7 @@ Class DimmerSettingsWindow
     ;; Private:
     Static AddTickerBox(nameOfTickerBox, minimumValue, maximumValue, defaultValue)
     {
-        ;; The below text control is the UpDown's "buddy control", which displays the UpDown's current value:
+        ;; The below Text control is the UpDown's "buddy control", which displays the UpDown's current value:
         DimmerSettingsWindow.SettingsWindow.Add("Text", "Background0xFFFFFF W75")
         DimmerSettingsWindow.SettingsWindow.Add("UpDown", "v" . nameOfTickerBox . " Range" . minimumValue . "-" . maximumValue, defaultValue)
     }
@@ -83,13 +82,14 @@ Class DimmerSettingsWindow
     ;; Private:
     Static AddDimmingStartHourAMPMDropDownList()
     {
-        choosePMOrAM := "Choose1"
+        ;; We set PM as the default, unless the DimmerSettings say otherwise:
+        selectPMOrAM := "Choose1"
         if (DimmerSettingsWindow.DimmerSettings.GetDimmingStartHourAMPM() = "AM")
         {
-            choosePMOrAM := "Choose2"
+            selectPMOrAM := "Choose2"
         }
         DimmerSettingsWindow.SettingsWindow.Add("DropDownList",
-                                                "vDimmingStartHourAMPMDropDownList XM Background0xFFFFFF W75 " . choosePMOrAM,
+                                                "vDimmingStartHourAMPMDropDownList XM Background0xFFFFFF W75 " . selectPMOrAM,
                                                 ["PM", "AM"])
     }
 
@@ -108,7 +108,7 @@ Class DimmerSettingsWindow
         DimmerSettingsWindow.AddHeading("Dimming duration:", "Section XS")
 
         ;; SECTION 1 (ROWS 1 AND 2):
-        ;; View function AddDimmingStartTimeForm for details on arranging GUI controls.
+        ;; View method AddDimmingStartTimeForm() for details on arranging GUI controls.
         DimmerSettingsWindow.SettingsWindow.Add("Text", "Section", "Hour:")
         DimmerSettingsWindow.AddTickerBox("DimmingDurationHour24TickerBox", 0, 23, DimmerSettingsWindow.DimmerSettings.GetDimmingDurationHour24())
         DimmerSettingsWindow.SettingsWindow.Add("Text", "X+M", ":")
@@ -121,6 +121,7 @@ Class DimmerSettingsWindow
     {
         ;; SECTION 0 (ROW 0):
         DimmerSettingsWindow.SettingsWindow.SetFont("s12")
+        ;; Notice how we must specify "&&" to display a single "&":
         saveButtonObject := DimmerSettingsWindow.SettingsWindow.Add("Button", "Section X0", "Save && Reload")
         DimmerSettingsWindow.CenterSaveButton(saveButtonObject)
         saveButtonObject.OnEvent("Click", DimmerSettingsWindow.OnSaveButtonClick)
@@ -131,9 +132,8 @@ Class DimmerSettingsWindow
     {
         saveButtonObject.GetPos(&unused, &saveButtonYPosition, &saveButtonWidth, &saveButtonHeight)
         ;; The SettingsWindow must be shown at least once before its dimensions can be read.
-        ;; It appears GUI objects do not have any dimensions calculated upon creaton.
-        ;; If this is correct, it could be because adding controls to a GUI object changes its required dimensions.
-        ;; It also appears that we can call the Show() method with the "Hide" argument, so the dimensions are still calculated while the SettingsWindow itself is never shown:
+        ;; As for why, it appears GUI objects do not have any dimensions calculated upon creaton.
+        ;; It also appears we can call the Show() method with the "Hide" argument, so the dimensions are calculated while the SettingsWindow itself is never shown:
         DimmerSettingsWindow.SettingsWindow.Show("Hide")
         DimmerSettingsWindow.SettingsWindow.GetPos(&unused, &unused, &settingsWindowWidth, &unused)
         saveButtonNewXPosition := (settingsWindowWidth - saveButtonWidth - DimmerSettingsWindow.SettingsWindow.MarginX) // 2
@@ -157,10 +157,19 @@ Class DimmerSettingsWindow
     }
 
     ;; Private:
+    Static UpdateTrayMenu()
+    {
+        ;; To insert a new item into position N, we must include an "&" after N:
+        A_TrayMenu.Insert("1&", "Edit dimming settings", DimmerSettingsWindow.ShowSettingsWindow)
+        ;; The default menu item is initally "Open", giving it a bold font, which is undone when a new default is set.
+        ;; Also, by changing the default item, double-clicking this script's tray icon activates the default item, now showing the SettingsWindow:
+        A_TrayMenu.Default := "Edit dimming settings"
+    }
+
+    ;; Private:
     Static ShowSettingsWindow(unusedItemPosition, unusedTrayMenuObject)
     {
-        ;; If this was a function instead of a method, it would require 3 parameters:
-        ;; (ItemName, ItemPos, MyMenu)
+        ;; If this was a function instead of a method, it would require 3 parameters: (ItemName, ItemPos, MyMenu).
         ;; Because this is a method, the "ItemName" parameter is removed, and instead can be accessed by a hidden local variable: "this".
         DimmerSettingsWindow.SettingsWindow.Show()
     }

@@ -16,6 +16,7 @@ Class WindowsAPITypes
 {
     ;; It seems the Windows API avoids using standard C++ types, and instead has its own defined type system (which are implemented as C++ types).
     ;; More information can be found at: https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types
+    ;; All public:
     Static DWORD := "UInt"             ;; Represents a 32-bit unsigned integer.
     Static BOOL := "Int"               ;; Represents a boolean, which will be either 1 (true) or 0 (false).
     Static LPDWORD := "UInt*"          ;; Represents a pointer to a DWORD, which may look like &(DWORD variable) in practice.

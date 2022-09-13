@@ -64,7 +64,7 @@ Class DimmerSettingsHandler
     {
         settingsFileObject := FileOpen(this.PathOfSettingsFile, "R")
         this.DimmingStartHour12 := this.ReadNextSettingsValue(settingsFileObject)
-        this.DimmingStartHourAMPM := settingsFileObject.ReadLine()
+        this.DimmingStartHourAMPM := this.ReadFromSettingsAMOrPM(settingsFileObject)
         this.DimmingStartMinute60 := this.ReadNextSettingsValue(settingsFileObject)
         this.DimmingDurationHour24 := this.ReadNextSettingsValue(settingsFileObject)
         this.DimmingDurationMinute60 := this.ReadNextSettingsValue(settingsFileObject)
@@ -91,6 +91,17 @@ Class DimmerSettingsHandler
         settingsFileObject.Close()
         this.CreateDefaultSettingsFile()
         Reload()
+    }
+
+    ;; Private:
+    ReadFromSettingsAMOrPM(settingsFileObject)
+    {
+        lineRead := settingsFileObject.ReadLine()
+        if (lineRead = "AM" || lineRead = "PM")
+        {
+            return lineRead
+        }
+        this.ResetToDefaultSettingsAndReloadScript(settingsFileObject)
     }
 
     ;; Public:
@@ -140,8 +151,7 @@ Class DimmerSettingsHandler
     ;; Public:
     GetDimmingDurationTotalMilliseconds()
     {
-        dimmingStartHour24 := this.GetDimmingStartHour24()
-        dimmingDurationTotalMinutes := dimmingStartHour24 * 60 + this.DimmingDurationMinute60
+        dimmingDurationTotalMinutes := this.DimmingDurationHour24 * 60 + this.DimmingDurationMinute60
         return dimmingDurationTotalMinutes * 60 * 1000
     }
 
