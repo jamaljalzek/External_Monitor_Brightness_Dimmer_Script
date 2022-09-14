@@ -39,6 +39,7 @@ Class DimmerSettingsWindow
         DimmerSettingsWindow.AddDividingLine()
         DimmerSettingsWindow.AddDimmingDurationForm()
         DimmerSettingsWindow.AddSaveButton()
+        DimmerSettingsWindow.SettingsWindow.OnEvent("Close", DimmerSettingsWindow.ResetControlsToCurrentDimmerSettings)
     }
 
     ;; Private:
@@ -154,6 +155,34 @@ Class DimmerSettingsWindow
                                                             dimmingDurationHour24,
                                                             dimmingDurationMinute60)
         Reload()
+    }
+
+    ;; Private:
+    Static ResetControlsToCurrentDimmerSettings()
+    {
+        ;; If this was a function instead of a method, it would require 1 parameter, which represents the GUI object this callback is registered to.
+        ;; Because this is a method, the parameter is removed, and instead can be accessed by a hidden local variable: "this".
+        dimmingStartHour12TickerBoxObject := DimmerSettingsWindow.SettingsWindow["DimmingStartHour12TickerBox"]
+        dimmingStartHour12TickerBoxObject.Value := DimmerSettingsWindow.DimmerSettings.GetDimmingStartHour12()
+        DimmerSettingsWindow.ResetDimmingStartHourAMPMDropDownList()
+        dimmingStartMinute60TickerBoxObject := DimmerSettingsWindow.SettingsWindow["DimmingStartMinute60TickerBox"]
+        dimmingStartMinute60TickerBoxObject.Value := DimmerSettingsWindow.DimmerSettings.GetDimmingStartMinute60()
+        dimmingDurationHour24TickerBoxObject := DimmerSettingsWindow.SettingsWindow["DimmingDurationHour24TickerBox"]
+        dimmingDurationHour24TickerBoxObject.Value := DimmerSettingsWindow.DimmerSettings.GetDimmingDurationHour24()
+        dimmingDurationMinute60TickerBoxObject := DimmerSettingsWindow.SettingsWindow["DimmingDurationMinute60TickerBox"]
+        dimmingDurationMinute60TickerBoxObject.Value := DimmerSettingsWindow.DimmerSettings.GetDimmingDurationMinute60()
+    }
+
+    ;; Private:
+    Static ResetDimmingStartHourAMPMDropDownList()
+    {
+        dimmingStartHourAMPMDropDownListObject := DimmerSettingsWindow.SettingsWindow["DimmingStartHourAMPMDropDownList"]
+        ;; We set PM as the default, unless the DimmerSettings say otherwise:
+        dimmingStartHourAMPMDropDownListObject.Value := 1
+        if (DimmerSettingsWindow.DimmerSettings.GetDimmingStartHourAMPM() = "AM")
+        {
+            dimmingStartHourAMPMDropDownListObject.Value := 2
+        }
     }
 
     ;; Private:
